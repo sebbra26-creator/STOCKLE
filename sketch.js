@@ -1,180 +1,177 @@
-let bgImage;
-  //My Daily STOCK LIST
+let bgImage; 
+const tickers = [ "AAPL", "GOOGL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "AMD", "NFLX", "INTC" ]; 
+const apikey = "d6liqdpr01qrq6i2tingd6liqdpr01qrq6i2tio0"; 
+const url = "https://finnhub.io/api/v1/quote?"; 
 
-const tickers = [ "AAPL", "GOOGL", "MSFT","NVDA", "TSLA", "AMZN", "META", "AMD", "NFLX", "INTC" ];
+let stocks = {}; // Changed to an object for reliable key-value pairing
+let targetTicker = ""; 
+let targetData; 
+let gameState = "loading"; 
+let currentGuess = ""; 
+let guesses = []; 
+const maxGuesses = 6; 
 
-// API Stuff
-const apiKey = "d6liqdpr01qrq6i2tingd6liqdpr01qrq6i2tio0";
-const apiURL = "https://finnhub.io/api/v1/quote?";T
-drawGameBoard();
-drawTypingArea();
-drawGuessCounter();
-  }
+function preload() { 
+  // Keep file loading in preload. Ensure this file is uploaded to GitHub!
+  bgImage = loadImage("wsb-price-rally.jpg"); 
+} 
 
-  else if (gameState === "win") {
-
-drawGameBoard();
-drawVictoryScreen();
-  }
-  else if (gameState === "lose") {
-drawGameBoard();
-drawGameOverScreen();
-  }
-}
-
-// TITLE
-
-function drawTitle() {
-fill(255);
-textSize(60);
-text("STOCKLE", width / 2, 60);
-textSize(28);
-text( "Guess Today's Mystery Stock TCKR!", width / 2, 105);
-}
-
-// LOADING SCREEN
-
-function drawLoadingScreen() {
-fill(255);
-}
-// GAME BOARD
-
-function drawGameBoard() {
-let startY = 160;
-for (let row = 0; row < maxGuesses; row++) {
-drawGuessRow(row, startY + row * 75);
-  }
-}
-
-// DRAW ONE ROW
-
-function drawGuessRow(rowNumber, yPosition) {
-let currentRowGuess = guessHistory[rowNumber];
-for (let letterSpot = 0; letterSpot < 5; letterSpot++) {
-let xPosition = width / 2 - 220 + letterSpot * 90;
-stroke(255);
-strokeWeight(2);
-if (currentRowGuess) {
-let guessedLetter = currentRowGuess[letterSpot] || "";
-let result = checkLetter( guessedLetter, letterSpot, secretTicker);
-
-
-if (result === "correct") {
-
-fill(0, 220, 100);
-      }
+async function setup() { 
+  createCanvas(900, 700); 
+  textAlign(CENTER, CENTER); 
   
+  // Safely fetch data asynchronously to prevent GitHub Pages page freeze
+  await loadMarketData();
+  chooseDailyStock(); 
+} 
 
-else if (result === "present") {
-
-fill(255, 190, 0);
-      }
-else {
-fill(90);
-}
-rect(xPosition, yPosition, 70, 70, 15);
-fill(255);
-noStroke();
-textSize(30);
-text( guessedLetter, xPosition + 35, yPosition + 35);
-    }
-    else {
-noFill();
-  rect(xPosition, yPosition, 70, 70, 15);
-    }
-  }
-}
-
-// Guessing TCKR's
-function checkLetter(letter, position, answer) {
-
-  // correct letter in correct position
-if (letter === answer[position]) {
-    return "correct";
-  }
-  for (let i = 0; i < answer.length; i++) {
-    if (answer[i] === letter && i !== position) {
-      return "present";
+async function loadMarketData() {
+  for (let i = 0; i < tickers.length; i++) {
+    let ticker = tickers[i];
+    let fetchUrl = `${url}symbol=${ticker}&token=${apikey}`;
+    try {
+      let response = await fetch(fetchUrl);
+      if (!response.ok) throw new Error("Network response was not ok");
+      stocks[ticker] = await response.json();
+    } catch (error) {
+      console.error("Failed to fetch data for " + ticker, error);
+      // Fallback dummy data if your API token is limited/expired
+      stocks[ticker] = { c: 150.00 }; 
     }
   }
-  // gray if it does not belong
-  return "wrong";
 }
-// Guessing Area
 
-function drawTypingArea() {
+function chooseDailyStock() { 
+  let today = new Date(); 
+  let seed = today.getFullYear() + today.getMonth() * 31 + today.getDate(); 
+  let index = seed % tickers.length; 
+  targetTicker = tickers[index]; 
+  
+  targetData = stocks[targetTicker]; 
+  gameState = "playing"; 
+} 
 
-fill(255);
-textSize(30);
-text (playerGuess, width / 2, 640);
-textSize(25);
-}
-// Previous guesses
+function draw() { 
+  background(0); 
+  if (bgImage) {
+    image(bgImage, 0, 0, width, height); 
+  }
+  fill(0, 190); 
+  rect(0, 0, width, height); 
+  drawTitle(); 
+  
+  if (gameState === "loading") { 
+    drawLoading(); 
+  } else if (gameState === "playing") { 
+    drawBoard(); 
+    drawInput(); 
+  } else if (gameState === "win") { 
+    drawBoard(); 
+    drawWin(); 
+  } else if (gameState === "lose") { 
+    drawBoard(); 
+    drawLose(); 
+  } 
+} 
 
-function drawGuessCounter() {
+function drawTitle() { 
+  fill(255); 
+  textSize(52); 
+  text("STOCKLE", width / 2, 60); 
+  textSize(18); 
+  text("Guess the daily stock ticker", width / 2, 105); 
+} 
+
+function drawLoading() { 
   fill(255);
-  textSize(23);
-  text( "Guesses Left: " + (maxGuesses - guessHistory.length), width / 2, 138);
-}
-// WIN SCREEN
+  textSize(30); 
+  text("Loading market data...", width / 2, height / 2); 
+} 
 
-function drawVictoryScreen() {
-fill(0, 255, 120);
-textSize(30);
-let randomMessage = funMessages[ floor(random(funMessages.length)) ];
-  text(randomMessage, width / 2, 640);
-  textSize(24);
-}
-// LOSE SCREEN
+function drawBoard() { 
+  let startY = 160; 
+  for (let i = 0; i < maxGuesses; i++) { 
+    let y = startY + i * 75; 
+    drawRow(i, y); 
+  } 
+} 
 
-function drawGameOverScreen() {
-fill(255, 80, 80);
-textSize(40);
-text( "The Market Beat You Today!", width / 2, 630);
-textSize(24);
-text( "Correct ticker: " + secretTicker, width / 2, 670);
-}
-// KEYBOARD INPUT
+function drawRow(row, y) { 
+  let guess = guesses[row]; 
+  for (let i = 0; i < 5; i++) { 
+    let x = width / 2 - 220 + i * 90; 
+    stroke(255); 
+    strokeWeight(2); 
+    if (guess) { 
+      let letter = guess[i] || ""; 
+      let targetLetter = targetTicker[i] || ""; 
+      if (letter === targetLetter) { 
+        fill(0, 180, 0); 
+      } else if (targetTicker.includes(letter)) { 
+        fill(190, 140, 0); 
+      } else { 
+        fill(80); 
+      } 
+      rect(x, y, 70, 70, 12); 
+      fill(255); 
+      noStroke(); 
+      textSize(30); 
+      text(letter, x + 35, y + 35); 
+    } else { 
+      noFill(); 
+      rect(x, y, 70, 70, 12); 
+    } 
+  } 
+} 
 
-function keyPressed() {
-if (gameState !== "playing") {
-    return;
-  }
-  
-  // Deleting letters
-if (keyCode === BACKSPACE) {
-    playerGuess = playerGuess.slice(0, -1);
-  }
-  
-  // submit guesses
-else if (keyCode === ENTER) {
-    submitGuess();
-  }
-  
-  // typing letters
-else if (
-    key.length === 1 &&
-    /[a-zA-Z]/.test(key)
-  ) {
-if (playerGuess.length < 5) {
-  playerGuess += key.toUpperCase();
-    }
-  }
-}
-// GUESS CHECKER
-function submitGuess() {
-if (playerGuess.length < 1) {
-    return;
-  }
-guessHistory.push(playerGuess);
-  // player wins
-  if (playerGuess === secretTicker) {
-    gameState = "win";
-  }
-  // player loses
-  else if ( guessHistory.length >= maxGuesses) {
-    gameState = "lose";
-  }
-  // reset typing box
-  playerGuess = "";
+function drawInput() { 
+  fill(255); 
+  textSize(26); 
+  text(currentGuess, width / 2, 640); 
+  textSize(18); 
+  text("Type a ticker and press ENTER", width / 2, 675); 
+} 
+
+function drawWin() { 
+  fill(0, 255, 120); 
+  textSize(42); 
+  text("YOU WON", width / 2, 620); 
+  textSize(24); 
+  text("Ticker: " + targetTicker, width / 2, 665); 
+} 
+
+function drawLose() { 
+  fill(255, 70, 70); 
+  textSize(42); 
+  text("GAME OVER", width / 2, 620); 
+  textSize(24); 
+  text("Answer: " + targetTicker, width / 2, 665); 
+} 
+
+function keyPressed() { 
+  if (gameState !== "playing") { 
+    return; 
+  } 
+  if (keyCode === BACKSPACE) { 
+    currentGuess = currentGuess.slice(0, -1); 
+  } else if (keyCode === ENTER) { 
+    submitGuess(); 
+  } else if (key.length === 1 && /[a-zA-Z]/.test(key)) { 
+    if (currentGuess.length < 5) { 
+      currentGuess += key.toUpperCase(); 
+    } 
+  } 
+} 
+
+function submitGuess() { 
+  if (currentGuess.length < 1) { 
+    return; 
+  } 
+  guesses.push(currentGuess); 
+  if (currentGuess === targetTicker) { 
+    gameState = "win"; 
+  } else if (guesses.length >= maxGuesses) { 
+    gameState = "lose"; 
+  } 
+  currentGuess = ""; 
 }
