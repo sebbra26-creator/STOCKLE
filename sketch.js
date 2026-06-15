@@ -135,7 +135,7 @@ function drawInput() {
 function drawWin() { 
   fill(0, 255, 120); 
   textSize(42); 
-  text("YOU WON", width / 2, 635); 
+  text("YOU WON", width / 2, 630); 
   textSize(21); 
   text("Ticker: " + targetTicker, width / 2, 665); 
 } 
