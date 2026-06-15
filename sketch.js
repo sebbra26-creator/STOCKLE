@@ -78,7 +78,7 @@ function drawTitle() {
   fill(255); 
   textSize(52); 
   text("STOCKLE", width / 2, 60); 
-  textSize(21); 
+  textSize(23); 
   text("Guess the daily stock ticker", width / 2, 105); 
 } 
 
@@ -128,15 +128,15 @@ function drawInput() {
   fill(255); 
   textSize(26); 
   text(currentGuess, width / 2, 640); 
-  textSize(21); 
+  textSize(23); 
   text("Type a ticker and press ENTER", width / 2, 675); 
 } 
 
 function drawWin() { 
   fill(0, 255, 120); 
   textSize(42); 
-  text("YOU WON", width / 2, 640); 
-  textSize(22); 
+  text("YOU WON", width / 2, 635); 
+  textSize(21); 
   text("Ticker: " + targetTicker, width / 2, 665); 
 } 
 
